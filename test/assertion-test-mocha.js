@@ -165,7 +165,77 @@ describe('BlogPost API resource', function() {
   });
 
 
+  describe('PUT endpoint', function() {
 
+    // strategy:
+    //  1. Get an existing post from db
+    //  2. Make a PUT request to update that post
+    //  3. Prove post returned by request contains data we sent
+    //  4. Prove post in db is correctly updated
+    it('should update fields you send over', function() {
+      const updateData = {
+        author: 'fofofofofofofof',
+        title: 'futuristic fusion',
+        content: 'This is a test content.  I should be updated.'
+      };
+
+      return BlogPost
+        .findOne()
+        .exec()
+        .then(function(post) {
+          updateData.id = post.id;
+
+          // make request then inspect it to make sure it reflects
+          // data we sent
+          return chai.request(app)
+            .put(`/posts/${post.id}`)
+            .send(updateData);
+        })
+        .then(function(res) {
+          res.should.have.status(204);
+
+          return BlogPost.findById(updateData.id).exec();
+        })
+        .then(function(post) {
+          post.author.should.equal(updateData.author);
+          post.title.should.equal(updateData.title);
+          post.content.should.equal(updateData.content);
+        });
+      });
+  });
+
+
+  describe('DELETE endpoint', function() {
+    // strategy:
+    //  1. get a post
+    //  2. make a DELETE request for that post's id
+    //  3. assert that response has right status code
+    //  4. prove that post with the id doesn't exist in db anymore
+    it('delete a post by id', function() {
+
+      let post;
+
+      return BlogPost
+        .findOne()
+        .exec()
+        .then(function(_post) {
+          post = _post;
+          return chai.request(app).delete(`/posts/${post.id}`);
+        })
+        .then(function(res) {
+          res.should.have.status(204);
+          return BlogPost.findById(post.id).exec();
+        })
+        .then(function(_post) {
+          // when a variable's value is null, chaining `should`
+          // doesn't work. so `_post.should.be.null` would raise
+          // an error. `should.be.null(_post)` is how we can
+          // make assertions about a null value.
+          should.not.exist(_post);
+        });
+    });
+  });
+});
 
 
 
