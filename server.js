@@ -19,6 +19,7 @@ app.get('/posts', (req, res) => {
     .find()
     .exec()
     .then(posts => {
+      console.log(posts);
       res.json(posts.map(post => post.apiRepr()));
     })
     .catch(err => {
