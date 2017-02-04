@@ -21,11 +21,11 @@ function seedBlogData() {
   const seedData = [];
 
   for (let i=1; i<=10; i++) {
-    seedData.push(generateBlogData());
+    seedData.push(generateBlogPostData());
   }
 
  // this will return a promise
-  return Blogpost.insertMany(seedData);
+  return BlogPost.insertMany(seedData);
 }
 
 // used to generate data to put in db
@@ -36,12 +36,15 @@ function seedBlogData() {
 // }
 
 
-// generate an object represnting a restaurant.
+// generate an object representing a post.
 // can be used to generate seed data for db
 // or request.body data
 function generateBlogPostData() {
   return {
-    author: faker.name.findName(),
+    author: {
+      firstName:faker.name.firstName(),
+      lastName:faker.name.lastName()
+    },
     title: faker.lorem.word(),
     content: faker.lorem.paragraph()
   }
@@ -91,12 +94,13 @@ describe('BlogPost API resource', function() {
           // so subsequent .then blocks can access resp obj.
           res = _res;
           res.should.have.status(200);
+          console.log(res.body);
           // otherwise our db seeding didn't work
-          res.body.posts.should.have.length.of.at.least(1);
+          res.body.should.have.length.of.at.least(1);
           return BlogPost.count();
         })
         .then(function(count) {
-          res.body.posts.should.have.length.of(count);
+          res.body.should.have.length.of(count);
         });
     });
 
@@ -110,21 +114,21 @@ describe('BlogPost API resource', function() {
         .then(function(res) {
           res.should.have.status(200);
           res.should.be.json;
-          res.body.posts.should.be.a('array');
-          res.body.posts.should.have.length.of.at.least(1);
+          res.body.should.be.a('array');
+          res.body.should.have.length.of.at.least(1);
 
-          res.body.posts.forEach(function(post) {
+          res.body.forEach(function(post) {
             post.should.be.a('object');
             post.should.include.keys(
               'title', 'author', 'content');
           });
-          resBlogPost = res.body.post[0];
+          resBlogPost = res.body[0];
           return BlogPost.findById(resBlogPost.id);
         })
         .then(function(post) {
 
           resBlogPost.id.should.equal(post.id);
-          resBlogPost.author.should.equal(post.author);
+          // resBlogPost.author.should.equal(post.author);
           resBlogPost.title.should.equal(post.title);
           resBlogPost.content.should.equal(post.content);
         });
@@ -140,7 +144,7 @@ describe('BlogPost API resource', function() {
     it('should add a new post', function() {
 
       const newPost = generateBlogPostData();
-
+      console.log(newPost);
       return chai.request(app)
         .post('/posts')
         .send(newPost)
@@ -150,17 +154,13 @@ describe('BlogPost API resource', function() {
           res.body.should.be.a('object');
           res.body.should.include.keys(
             'author', 'title', 'content');
-          res.body.name.should.equal(newPost.name);
+          console.log(res.body);
+          res.body.author.should.equal(`${newPost.author.firstName} ${newPost.author.lastName}`);
           // cause Mongo should have created id on insertion
           res.body.id.should.not.be.null;
-
-          return BlogPost.findById(res.body.id);
+          res.body.title.should.equal(newPost.title);
+          res.body.content.should.equal(newPost.content);
         })
-        .then(function(post) {
-          post.author.should.equal(newPost.author);
-          post.title.should.equal(newPost.title);
-          post.content.should.equal(newPost.content);
-        });
     });
   });
 
@@ -192,14 +192,12 @@ describe('BlogPost API resource', function() {
             .send(updateData);
         })
         .then(function(res) {
-          res.should.have.status(204);
-
-          return BlogPost.findById(updateData.id).exec();
-        })
-        .then(function(post) {
-          post.author.should.equal(updateData.author);
-          post.title.should.equal(updateData.title);
-          post.content.should.equal(updateData.content);
+          res.should.have.status(201);
+          console.log(res.body);
+      
+          // res.body.author.should.equal(updateData.author);
+          res.body.title.should.equal(updateData.title);
+          res.body.content.should.equal(updateData.content);
         });
       });
   });
